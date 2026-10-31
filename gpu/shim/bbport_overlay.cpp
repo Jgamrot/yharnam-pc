@@ -27,6 +27,7 @@
 #include <nlohmann/json.hpp>
 
 #include <SDL3/SDL.h>
+#include "../bbgpu.h"
 #include "bbport_settings.h"
 #include "bbport_trophies.h"
 #include "bbport_trophy_toast.h"
@@ -68,6 +69,10 @@ extern "C" const unsigned char bb_font_ttf[];
 extern "C" const unsigned char bb_font_ttf_end[];
 
 extern "C" void runtime_restart(void); // bb-probe (probe.c)
+
+// The runtime's keyboard and mouse bindings (bbgpu_set_bindings), for the Key Bindings section.
+static std::atomic<const BbBindingsApi*> bindings_api{nullptr};
+extern "C" void bbgpu_set_bindings(const BbBindingsApi* api) { bindings_api = api; }
 
 namespace BbOverlay {
 
@@ -953,6 +958,176 @@ bool SetPromptEnabled(const std::string& folder, bool enabled) {
     return bool(file);
 }
 
+// Key bindings: each action's three bindings, as in the launcher's Controls page. Choosing a
+// slot listens for the next key, mouse button or wheel notch, held Shift, Ctrl or Alt making it a
+// combination (a modifier pressed and let go alone is bound by itself); a right click or the
+// pad's X empties the slot. A change applies at once and is saved to the key_ lines of
+// bbport.ini, the launcher's and the game's.
+struct BindingCapture {
+    int action = -1, slot = 0;
+    SDL_Scancode lone = SDL_SCANCODE_UNKNOWN; // a modifier pressed with nothing else yet
+    int64_t until_ms = 0;
+};
+BindingCapture binding_capture; // guarded by imgui_mutex: HandleEvent and the menu
+bool FoldSection(const char* title, const char* hint, bool* open); // below
+constexpr int64_t BIND_LISTEN_MS = 6000;
+
+std::vector<std::string> BindingSlots(const BbBindingsApi* api, int action) {
+    char text[192];
+    api->text(action, text, sizeof(text));
+    std::vector<std::string> slots;
+    if (!std::strcmp(text, "none")) return slots;
+    for (const char* at = text; *at;) {
+        const char* comma = std::strchr(at, ',');
+        std::string slot(at, comma ? size_t(comma - at) : std::strlen(at));
+        slot.erase(0, slot.find_first_not_of(' '));
+        slots.push_back(slot);
+        if (!comma) break;
+        at = comma + 1;
+    }
+    return slots;
+}
+
+// Applies a slot's new binding ("" empties it) and saves every action it changed: binding a key
+// takes it from whichever action had it.
+void SetBinding(int action, int slot, const std::string& binding) {
+    const BbBindingsApi* api = bindings_api;
+    if (!api) return;
+    std::vector<std::string> before(api->count), slots = BindingSlots(api, action);
+    for (int a = 0; a < api->count; ++a) {
+        char text[192];
+        api->text(a, text, sizeof(text));
+        before[a] = text;
+    }
+    if (slot < int(slots.size())) {
+        if (binding.empty()) slots.erase(slots.begin() + slot);
+        else slots[slot] = binding;
+    } else if (!binding.empty()) {
+        slots.push_back(binding);
+    }
+    std::string value;
+    for (const std::string& s : slots) value += (value.empty() ? "" : ", ") + s;
+    api->set(action, value.empty() ? "none" : value.c_str());
+    std::vector<std::pair<std::string, std::string>> changed;
+    for (int a = 0; a < api->count; ++a) {
+        char text[192];
+        api->text(a, text, sizeof(text));
+        if (a == action || before[a] != text) changed.emplace_back(std::string("key_") + api->key(a), text);
+    }
+    BbSettings::RewriteKeys(changed, nullptr);
+}
+
+bool IsModifier(SDL_Scancode key) {
+    return key == SDL_SCANCODE_LSHIFT || key == SDL_SCANCODE_RSHIFT || key == SDL_SCANCODE_LCTRL ||
+           key == SDL_SCANCODE_RCTRL || key == SDL_SCANCODE_LALT || key == SDL_SCANCODE_RALT;
+}
+
+// Ends a listen with `input` (an SDL key name or Mouse1..WheelDown) and the modifiers held with
+// it; a combination keeps three inputs at most, as the game reads them.
+void FinishCapture(const std::string& input, SDL_Scancode except) {
+    std::string binding;
+    int parts = 1;
+    const bool* held = SDL_GetKeyboardState(nullptr);
+    for (SDL_Scancode mod : {SDL_SCANCODE_LCTRL, SDL_SCANCODE_RCTRL, SDL_SCANCODE_LSHIFT, SDL_SCANCODE_RSHIFT,
+                             SDL_SCANCODE_LALT, SDL_SCANCODE_RALT})
+        if (mod != except && held && held[mod] && parts < 3) {
+            binding += std::string(SDL_GetScancodeName(mod)) + "+";
+            ++parts;
+        }
+    SetBinding(binding_capture.action, binding_capture.slot, binding + input);
+    binding_capture.action = -1;
+}
+
+// The listening slot takes this event; false when it is not one it waits for.
+bool CaptureEvent(const SDL_Event& event) {
+    if (binding_capture.action < 0) return false;
+    switch (event.type) {
+    case SDL_EVENT_KEY_DOWN: {
+        if (event.key.repeat) return true;
+        if (event.key.key == SDLK_INSERT) { // Insert stays the menu's own key
+            binding_capture.action = -1;
+            return false;
+        }
+        const SDL_Scancode key = event.key.scancode;
+        if (IsModifier(key)) {
+            if (binding_capture.lone == SDL_SCANCODE_UNKNOWN) binding_capture.lone = key;
+        } else {
+            FinishCapture(SDL_GetScancodeName(key), SDL_SCANCODE_UNKNOWN);
+        }
+        return true;
+    }
+    case SDL_EVENT_KEY_UP:
+        if (event.key.scancode == binding_capture.lone)
+            FinishCapture(SDL_GetScancodeName(binding_capture.lone), binding_capture.lone);
+        return true;
+    case SDL_EVENT_MOUSE_BUTTON_DOWN:
+        if (event.button.button >= 1 && event.button.button <= 5)
+            FinishCapture("Mouse" + std::to_string(event.button.button), SDL_SCANCODE_UNKNOWN);
+        return true;
+    case SDL_EVENT_MOUSE_BUTTON_UP:
+        return true;
+    case SDL_EVENT_MOUSE_WHEEL:
+        if (event.wheel.y != 0.0f) {
+            const bool up = (event.wheel.y > 0) != (event.wheel.direction == SDL_MOUSEWHEEL_FLIPPED);
+            FinishCapture(up ? "WheelUp" : "WheelDown", SDL_SCANCODE_UNKNOWN);
+        }
+        return true;
+    case SDL_EVENT_GAMEPAD_BUTTON_DOWN: // the pad cancels
+        binding_capture.action = -1;
+        return true;
+    default:
+        return false;
+    }
+}
+
+void KeyBindingsSection() {
+    static bool open = false;
+    if (!FoldSection("KEY BINDINGS", "Keyboard and mouse", &open)) return;
+    const BbBindingsApi* api = bindings_api;
+    if (!api) {
+        Note("The key bindings load with the game's first pad read; open this again in a moment.", Ink::Faint);
+        return;
+    }
+    if (binding_capture.action >= 0 && ClockMs() > binding_capture.until_ms) binding_capture.action = -1;
+    Note("Choose a slot, then press a key, a mouse button or turn the wheel; hold Shift, Ctrl or Alt "
+         "with it for a combination. Right click (or X on a pad) empties a slot. Changes apply at once.",
+         Ink::Faint);
+    for (int a = 0; a < api->count; ++a) {
+        RowLabel(api->label(a), ImGui::GetFrameHeight());
+        const std::vector<std::string> slots = BindingSlots(api, a);
+        const float gap = Px(6.0f), w = (ImGui::GetContentRegionAvail().x - 2.0f * gap) / 3.0f;
+        for (int s = 0; s < 3; ++s) {
+            if (s) ImGui::SameLine(0.0f, gap);
+            // An empty slot fills the first free one, which is the one that shows the listen.
+            const bool shown_listening = binding_capture.action == a && binding_capture.slot == s;
+            const std::string text = shown_listening ? "Press..." : s < int(slots.size()) ? slots[s] : "-";
+            ImGui::PushID(a * 4 + s);
+            if (shown_listening) ImGui::PushStyleColor(ImGuiCol_Button, Vec(Ink::Accent));
+            const bool chosen = ImGui::Button(text.c_str(), ImVec2(w, 0));
+            if (shown_listening) ImGui::PopStyleColor();
+            const bool hot = ImGui::IsItemHovered() || ImGui::IsItemFocused();
+            if (ImGui::IsItemHovered() && !shown_listening && s < int(slots.size()))
+                ImGui::SetTooltip("%s", slots[s].c_str());
+            if (chosen) {
+                binding_capture = {a, std::min(s, int(slots.size())), SDL_SCANCODE_UNKNOWN,
+                                   ClockMs() + BIND_LISTEN_MS};
+            } else if (s < int(slots.size()) &&
+                       (ImGui::IsItemClicked(ImGuiMouseButton_Right) ||
+                        (hot && ImGui::IsKeyPressed(ImGuiKey_GamepadFaceLeft, false)))) {
+                SetBinding(a, s, "");
+            }
+            ImGui::PopID();
+        }
+    }
+    CloseRows();
+    ImGui::Dummy(ImVec2(0, Px(8.0f)));
+    if (ImGui::Button("Reset all to defaults")) {
+        api->reset();
+        BbSettings::RewriteKeys({}, "key_");
+        binding_capture.action = -1;
+    }
+}
+
 void ModsTab() {
     auto& s = BbSettings::Get();
     const bool native = NativePcMenuAvailable();
@@ -1003,6 +1178,7 @@ void ModsTab() {
         Note("Choose Keyboard in the launcher's Controls page once to add the keyboard keys.", Ink::Faint);
     if (!mod_selection_error.empty())
         Note(mod_selection_error.c_str(), Ink::Accent);
+    KeyBindingsSection();
     if (!native) Section("Gameplay and debug");
     else Section("Cheats (restart required)");
     for (int e = native ? 0 : 8; e < BbSettings::FirstEnhancement; ++e) {
@@ -1840,6 +2016,7 @@ bool HandleEvent(const SDL_Event& event) {
     if (!text_entry_active && BbAtlasMenu::HandleMouse(event)) return true;
     if (!text_entry_active && BbMap::HandleEvent(event)) return true;
     const bool is_open = menu_open || BbMap::IsOpen();
+    if (menu_open && CaptureEvent(event)) return true;
     switch (event.type) {
     case SDL_EVENT_KEY_DOWN:
     case SDL_EVENT_KEY_UP: {

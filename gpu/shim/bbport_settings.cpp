@@ -360,6 +360,37 @@ void Save() {
     std::fclose(file);
 }
 
+void RewriteKeys(const std::vector<std::pair<std::string, std::string>>& keys, const char* drop_prefix) {
+    std::vector<std::string> lines;
+    std::vector<bool> written(keys.size());
+    if (FILE* file = std::fopen(Path(), "r")) {
+        char line[256];
+        while (std::fgets(line, sizeof(line), file)) {
+            std::string text{line};
+            text.erase(text.find_last_not_of("\r\n") + 1);
+            std::string name = text.substr(0, text.find('='));
+            name.erase(name.find_last_not_of(" \t") + 1);
+            size_t k = 0;
+            while (k < keys.size() && keys[k].first != name) ++k;
+            if (k < keys.size()) {
+                if (written[k]) continue;
+                text = keys[k].first + "=" + keys[k].second;
+                written[k] = true;
+            } else if (drop_prefix && name.rfind(drop_prefix, 0) == 0) {
+                continue;
+            }
+            lines.push_back(text);
+        }
+        std::fclose(file);
+    }
+    for (size_t k = 0; k < keys.size(); ++k)
+        if (!written[k]) lines.push_back(keys[k].first + "=" + keys[k].second);
+    if (FILE* file = std::fopen(Path(), "w")) {
+        for (const std::string& line : lines) std::fprintf(file, "%s\n", line.c_str());
+        std::fclose(file);
+    }
+}
+
 void NoteDeviceLost() {
     auto& v = Get();
     if (!v.fsr4_running || !IsFsr4(v.upscaler)) return;

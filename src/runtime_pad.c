@@ -306,6 +306,16 @@ static SDL_Gamepad *current_gamepad(void) {
     return gamepad;
 }
 static uint32_t host_mouse_buttons; /* the pad bits only mouse bindings set (sample_host) */
+
+/* The Key Bindings page of the port's menu edits the bindings through these (bbgpu.h).
+ * The menu's thread changes them while the pad read uses them, unlocked: a read in the middle of
+ * a change can see an action half rebound, for that one read. */
+static const char *binding_key(int action) { return bb_bind_info(action)->key; }
+static const char *binding_label(int action) { return bb_bind_info(action)->label; }
+static void binding_set(int action, const char *value) { bb_bindings_parse(bb_bind_info(action)->key, value); }
+static const BbBindingsApi BINDINGS_API = {BIND_COUNT, binding_key, binding_label, bb_binding_text, binding_set,
+                                           bb_bindings_reset};
+
 static void sample_host(PadData *d) {
     memset(d,0,sizeof(*d));
     d->left_x=d->left_y=d->right_x=d->right_y=128;
@@ -388,6 +398,7 @@ static void sample_host(PadData *d) {
     if (!bindings_loaded) {
         bindings_loaded=1;
         bb_bindings_load(getenv("BB_CONFIG"));
+        bbgpu_set_bindings(&BINDINGS_API);
     }
     uint32_t mouse=0;
     if (SDL_WasInit(SDL_INIT_VIDEO) && SDL_GetKeyboardFocus()) {

@@ -127,6 +127,25 @@ static void defaults(void) {
     }
 }
 
+void bb_bindings_reset(void) { defaults(); }
+
+void bb_binding_text(int action, char *out, int size) {
+    static const char *const MOUSE_TEXT[] = {NULL, "Mouse1", "Mouse2", "Mouse3", "Mouse4", "Mouse5", "WheelUp", "WheelDown"};
+    if (!out || size <= 0) return;
+    out[0] = 0;
+    if (action < 0 || action >= BIND_COUNT) return;
+    int used = 0;
+    for (int s = 0; s < BIND_SLOTS; ++s) {
+        const BindSlot *b = &g_slot[action][s];
+        for (int i = 0; i < b->n && used < size; ++i) {
+            const char *name = is_mouse(b->in[i]) ? MOUSE_TEXT[-b->in[i]] : SDL_GetScancodeName((SDL_Scancode)b->in[i]);
+            used += snprintf(out + used, (size_t)(size - used), "%s%s",
+                             i ? "+" : used ? ", " : "", name);
+        }
+    }
+    if (!used) snprintf(out, (size_t)size, "none");
+}
+
 static void trim(char *s) {
     size_t n = strlen(s);
     while (n && isspace((unsigned char)s[n - 1])) s[--n] = 0;
