@@ -814,14 +814,14 @@ void SettingsTab() {
     }
     Hint("On: output and presets change without restarting, while game post-processing stays at 1080p. Off: the scene is patched to the preset resolution at startup. Auto enables the live path on capable discrete GPUs, except for outputs above 1080p with depth of field on (the live path blurs those scenes). Changes apply after restarting the game.");
     Section("Game effects (restart required)");
-    static const char* lods[] = {"Highest (-2)", "Original", "Lower (1)", "Lowest (2)"};
-    static constexpr int lod_values[] = {-2, 0, 1, 2};
-    int lod_index = 1;
-    for (int i = 0; i < 4; ++i) {
+    static const char* lods[] = {"Highest (-2)", "Higher (-1)", "Original", "Lower (1)", "Lowest (2)"};
+    static constexpr int lod_values[] = {-2, -1, 0, 1, 2};
+    int lod_index = 2;
+    for (int i = 0; i < 5; ++i) {
         if (lod_values[i] == s.model_lod) lod_index = i;
     }
     if (ComboRow("Model detail", lods[lod_index])) {
-        for (int i = 0; i < 4; ++i) {
+        for (int i = 0; i < 5; ++i) {
             if (ImGui::Selectable(lods[i], i == lod_index)) {
                 Store(s.model_lod, lod_values[i], true);
             }

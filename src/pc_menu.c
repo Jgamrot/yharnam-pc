@@ -199,7 +199,7 @@ static const Option OUTPUTS[] = {{0, 125100}, {13, 125114}, {1, 125101}, {2, 125
                                  {12, 125113}, {5, 125104}, {6, 125105}, {10, 125106}, {8, 125107},
                                  {11, 125108}, {7, 125109}};
 static const Option LIVE[] = {{-1, 125110}, {0, 125111}, {1, 125112}};
-static const Option LODS[] = {{-2, 125120}, {0, 125121}, {1, 125122}, {2, 125123}};
+static const Option LODS[] = {{-2, 125120}, {-1, 125124}, {0, 125121}, {1, 125122}, {2, 125123}};
 #define COUNT(a) ((int)(sizeof(a) / sizeof((a)[0])))
 #define TOGGLE_ROW(key, id) {key, id, TOGGLE, NULL, 0, 0, 0, 0, {{0, 0}}, 0, {{0}}, {0}}
 #define PICK_ROW(key, id, list) {key, id, PICK, list, COUNT(list), 0, 0, 0, {{0, 0}}, 0, {{0}}, {0}}

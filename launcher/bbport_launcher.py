@@ -55,7 +55,7 @@ EFFECTS = [
     ("debug_camera", "Свободная камера (Cross + L3 / Space + Z)", False),
     ("debug_menu", "Debug menu (левый touchpad / Tab; нужны шрифты)", False),
 ]
-MODEL_LOD = [("Как в игре", "0"), ("Максимальная (-2)", "-2"), ("Ниже (1)", "1"),
+MODEL_LOD = [("Как в игре", "0"), ("Максимальная (-2)", "-2"), ("Высокая (-1)", "-1"), ("Ниже (1)", "1"),
              ("Минимальная (2)", "2")]
 # 120 and 144: 90 FPS++ with its values for that rate (scripts/patches.py SCALED_FPS).
 FPS_MODES = [("120 (рекомендуется)", "120"), ("144", "144"), ("90", "90"), ("60", "60"),

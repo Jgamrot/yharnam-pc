@@ -304,6 +304,11 @@
             <Line Type="bytes" Address="0x0216fc09" Value="b90100000090"/>
         </PatchList>
     </Metadata>
+    <Metadata Title="Bloodborne" Name="Model LOD -1 (Higher)" Note="Higher model detail, one step below Highest. Affects visuals, Higher model LOD." Author="Kyo, auser1337" PatchVer="1.0" AppVer="01.09" AppElf="eboot.bin" isEnabled="false">
+        <PatchList>
+            <Line Type="bytes" Address="0x0216fc09" Value="b9FFFFFFFF90"/>
+        </PatchList>
+    </Metadata>
     <Metadata Title="Bloodborne" Name="Model LOD -2 (Highest)" Note="Highest model detail, performance increase. Affects visuals, Higher model LOD." Author="Kyo, auser1337" PatchVer="1.0" AppVer="01.09" AppElf="eboot.bin" isEnabled="false">
         <PatchList>
             <Line Type="bytes" Address="0x0216fc09" Value="b9FEFFFFFF90"/>
