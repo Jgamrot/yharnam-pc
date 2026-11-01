@@ -360,8 +360,8 @@ EFFECTS={
 # Left out online (BB_ONLINE=1; not seamless co-op's BB_COOP=1, among players who chose it),
 # whatever bbport.ini, BB_PATCHES or a third-party file asks for; the live stamina cheats are off there too (bbport_settings.cpp OnlineBlocked).
 ONLINE_BLOCKED={EFFECTS[key][1] for key in EFFECTS if key.startswith(('cheat_','debug_'))}
-# model_lod: -2 highest, 0 the game's, 1 lower, 2 lowest.
-MODEL_LOD={'-2':'Model LOD -2 (Highest)','1':'Model LOD 1 (Lower)','2':'Model LOD 2 (Lowest)'}
+# model_lod: -2 highest, -1 higher, 0 the game's, 1 lower, 2 lowest.
+MODEL_LOD={'-2':'Model LOD -2 (Highest)','-1':'Model LOD -1 (Higher)','1':'Model LOD 1 (Lower)','2':'Model LOD 2 (Lowest)'}
 
 
 def game_app_version(game):

@@ -343,6 +343,7 @@ HUD_POSITIONS = [('100', ('Screen edges', 'У краёв экрана')), ('75',
 LIVE = [('auto', ('Auto (by graphics card)', 'Авто (по видеокарте)')), ('0', ('Off (faster)', 'Выключена (быстрее)')),
         ('1', ('On (change without restarting)', 'Включена (без перезапуска)'))]
 LODS = [('0', ('As in the game', 'Как в игре')), ('-2', ('Highest (−2)', 'Максимальная (−2)')),
+        ('-1', ('Higher (−1)', 'Высокая (−1)')),
         ('1', ('Lower (1)', 'Ниже (1)')), ('2', ('Lowest (2)', 'Минимальная (2)'))]
 # 120 and 144: 90 FPS++ with its values for that rate (scripts/patches.py SCALED_FPS). Unlocked froze
 # at the end of Vicar Amelia's intro; settings saved before 120 was the default keep it
