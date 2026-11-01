@@ -68,6 +68,20 @@ int bbgpu_achievement_count(void);
 int bbgpu_achievement_get(int index, BbAchievement *out);
 /* Earned and total Gamerscore; returns 0 while the total is not the full 1000. */
 int bbgpu_achievement_score(int *earned, int *total);
+/* The Key Bindings page of the port's menu (Insert): the runtime's actions (src/input_bindings.c).
+ * text writes an action's bindings as bbport.ini keeps them; set applies a key_<action> value
+ * at once, reset every default. The menu saves the key_ lines itself. */
+typedef struct {
+    int count;
+    const char *(*key)(int action);   /* the bbport.ini name after "key_" */
+    const char *(*label)(int action);
+    void (*text)(int action, char *out, int size);
+    void (*set)(int action, const char *value);
+    void (*reset)(void);
+} BbBindingsApi;
+void bbgpu_set_bindings(const BbBindingsApi *api);
+/* Opens that menu on its Key Bindings (the game's System > Key Bindings). */
+void bbgpu_open_key_bindings(void);
 /* Mouse wheel notches for the pad read, one a call: bit 0 up, bit 1 down (input_bindings.h). */
 uint32_t bbgpu_mouse_wheel_take(void);
 /* The mouse camera: whether the window holds the mouse (relative mode), and the motion since

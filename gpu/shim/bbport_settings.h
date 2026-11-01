@@ -6,6 +6,9 @@
 #pragma once
 
 #include <atomic>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace BbSettings {
 
@@ -177,6 +180,9 @@ bool ResolutionNeedsRestart();
 bool AspectNeedsRestart();
 /// Writes the file (menu changes).
 void Save();
+/// Sets these keys in the file (each in its place, a new one at the end), and with drop_prefix
+/// removes every other line whose key starts with it; the rest stays as it is (key_ bindings).
+void RewriteKeys(const std::vector<std::pair<std::string, std::string>>& keys, const char* drop_prefix);
 /// The GPU was lost: with FSR 4 running, writes fsr4_device_lost=1 for the next start.
 void NoteDeviceLost();
 

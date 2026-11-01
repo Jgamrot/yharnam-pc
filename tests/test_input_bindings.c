@@ -147,6 +147,21 @@ int main(void) {
     assert(o.buttons == 0x4000);
     assert(bb_bindings_parse("interact", "E, F, G, H"));
     assert(bb_binding_slots(BIND_INTERACT, slots, BIND_SLOTS) == 3);
+    /* The text the Key Bindings page shows and writes back, and the reset to the defaults. */
+    char text[96];
+    bb_binding_text(BIND_INTERACT, text, sizeof(text));
+    assert(!strcmp(text, "E, F, G"));
+    bb_binding_text(BIND_STRONG, text, sizeof(text));
+    assert(!strcmp(text, "Left Shift+Mouse1"));
+    assert(bb_bindings_parse("gestures", "none"));
+    bb_binding_text(BIND_GESTURES, text, sizeof(text));
+    assert(!strcmp(text, "none"));
+    bb_bindings_reset();
+    bb_binding_text(BIND_FIREARM, text, sizeof(text));
+    assert(!strcmp(text, "X, Mouse2"));
+    bb_binding_text(BIND_GESTURES, text, sizeof(text));
+    assert(!strcmp(text, "G"));
+    assert(bb_bindings_parse("interact", text) && bb_binding_key(BIND_INTERACT) == SDL_SCANCODE_G);
     puts("input bindings: ok");
     return 0;
 }

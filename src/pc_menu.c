@@ -76,7 +76,8 @@ enum { BUILDER_BEGIN = 0x68, BUILDER_END = 0x70, BUILDER_ROW = 0x180 };
  * a pick-list widget's drop-down list and the value pointer it is bound to. */
 enum { ITEMS_BEGIN = 0xe58, ITEMS_END = 0xe60, ITEM_STRIDE = 0x90, ITEM_WIDGET = 0x80,
        DIALOG_ROWS = 0xa70, PICK_ITEMS = 0x100, PICK_BOUND = 0x3c8 };
-enum { ROW_QUIT = 122000, QUIT_QUESTION = 920001, ROW_RESTART = 110017, RESTART_QUESTION = 920002 };
+enum { ROW_QUIT = 122000, QUIT_QUESTION = 920001, ROW_RESTART = 110017, RESTART_QUESTION = 920002,
+       ROW_KEYS = 110019, KEYS_QUESTION = 920003 };
 
 typedef int64_t (BB_GUEST_ABI *GuestFn)(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t);
 
@@ -727,6 +728,15 @@ static BB_GUEST_ABI int64_t restart_yes(int64_t a, int64_t b) {
     return 0;
 }
 
+/* Key Bindings: the port's own menu (Insert) takes them, a page the game's menu has no room or
+ * widget for (each action's three key slots); the question says where they open. */
+static BB_GUEST_ABI int64_t keys_yes(int64_t a, int64_t b) {
+    (void)a, (void)b;
+    puts("PC menu: Key Bindings");
+    bbgpu_open_key_bindings();
+    return 0;
+}
+
 static void *question(void *out, void *factory, uint32_t message, const void *yes) {
     _Alignas(16) unsigned char caption[0x40];
     memset(caption, 0, sizeof(caption));
@@ -749,6 +759,10 @@ static BB_GUEST_ABI void *quit_opener(void *out, void *factory) {
 
 static BB_GUEST_ABI void *restart_opener(void *out, void *factory) {
     return question(out, factory, RESTART_QUESTION, (const void *)restart_yes);
+}
+
+static BB_GUEST_ABI void *keys_opener(void *out, void *factory) {
+    return question(out, factory, KEYS_QUESTION, (const void *)keys_yes);
 }
 
 static void add_command(void *builder, uint32_t id, const void *open, int section_opener) {
@@ -801,6 +815,7 @@ static BB_GUEST_ABI void *system_finalize(void *out, void *builder, void *arg3) 
         const int i = NATIVE_SECTION_INDEX[k];
         add_command(builder, g_sections[i].system_row, SECTION_ROWS[i], 1);
     }
+    add_command(builder, ROW_KEYS, (const void *)keys_opener, 0);
     add_command(builder, ROW_RESTART, (const void *)restart_opener, 0);
     if (move_exit) add_command(builder, EXIT_GAME_ROW_ID, bb_guest(BB_BN(EXIT_GAME_OPENER)), 0);
     fn(SYSTEM_FINALIZE)(ptr(out), ptr(builder), ptr(arg3), 0, 0, 0);

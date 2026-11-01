@@ -5,7 +5,7 @@
 # Environment, ... 115000 Language. Inside a block, N is a row and N+20 is the screen title;
 # N+100.. are a row's choices. The PC menu takes 116000 PC Settings, 117000 PC Graphics,
 # 120000 PC Effects, 124000 PC Enhancements, 125000 PC Display, 126000 PC Gameplay and
-# 127000 PC Cheats and 128000 Achievements, and 110006..110018 for the System rows that open them; all are unused in
+# 127000 PC Cheats and 128000 Achievements, and 110006..110019 for the System rows that open them; all are unused in
 # the shipped bundle.
 # Ids 920000..929999 are dialog text (groups 78 and 204, yes/no questions); 122000 is the
 # title menu's Quit Game.
@@ -23,6 +23,7 @@
 110016	PC Cheats	Cheats for this session. Restart to apply.
 110018	Achievements	Your achievements, unlock dates and Gamerscore.
 110017	Restart to Apply	Restart the game so changed settings take effect.
+110019	Key Bindings	Keyboard and mouse keys, in the port's menu.
 116020	PC Settings
 116004	Skip Company Logos	Skips the logos and intro movie. Applies next start.
 116008	Screen-space Reflections	Reflections on wet floors. Restart to apply.
@@ -112,6 +113,7 @@
 122000	Quit Game	Close the game and return to the desktop.
 920001	Quit the game and return to the desktop?
 920002	Restart the game now to apply changed settings?
+920003	Open the key bindings? They open in the port's menu\nover the game (Insert closes it).
 14000332	Rebirth in the Nightmare
 14000333	The altar is silent.\nIt awaits one who bears a sacred heirloom,\na consciousness that is only asleep.
 14000334	Too many Blood Echoes are held to be reborn.\nSpend some, then return to the altar.

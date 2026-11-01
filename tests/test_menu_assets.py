@@ -44,7 +44,7 @@ class FormatTests(unittest.TestCase):
         events = [mid for mid in rows if m.message_kind(mid) == 'event']
         # Rebirth; the 19 boss rematches (14000337 Cleric Beast to 14000355 Orphan of Kos)
         self.assertEqual(events, [14000332, 14000333, 14000334, 14000335, 14000336, *range(14000337, 14000356)])
-        self.assertEqual([mid for mid in rows if m.message_kind(mid) == 'dialog'], [920001, 920002])
+        self.assertEqual([mid for mid in rows if m.message_kind(mid) == 'dialog'], [920001, 920002, 920003])
         self.assertEqual(rows[122000][0], 'Quit Game')
 
     def test_runtime_and_movie_agree_on_sections_rows_and_strings(self):

@@ -15,6 +15,7 @@ static int capture;
 int bbgpu_overlay_captures_input(void) { return capture; }
 uint32_t bbgpu_atlas_route_pad(uint32_t b, uint8_t lx, uint8_t ly, uint8_t rx, uint8_t ry) { (void)lx; (void)ly; (void)rx; (void)ry; return b; }
 uint32_t bbgpu_mouse_wheel_take(void) { return 0; }
+void bbgpu_set_bindings(const BbBindingsApi *api) { (void)api; }
 int bb_menu_pointer_owns_mouse(void) { return 0; }
 void bb_menu_pointer_click(void) {}
 void bb_menu_pointer_back(void) {}

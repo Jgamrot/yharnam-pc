@@ -66,6 +66,11 @@ int bb_binding_key(int action);   /* SDL scancode of the first plain key binding
 int bb_binding_mouse(int action); /* 1..7 of the first plain mouse binding, 0 when none */
 /* The bindings of one action: how many are set (up to max_slots). */
 int bb_binding_slots(int action, BindSlot *out, int max_slots);
+/* The bindings of one action the way bbport.ini writes them ("E, Mouse2", "Left Shift+Mouse1",
+ * "none"), for the Key Bindings page of the port's menu. */
+void bb_binding_text(int action, char *out, int size);
+/* Every action back to its default bindings (the ini file is not read). */
+void bb_bindings_reset(void);
 
 /* What the held keys and mouse inputs do to the pad: buttons to set, a touchpad side to press
  * (-1 none, 0 left, 1 right), and stick axes (0..255, or -1 to leave the gamepad's). `keys` is
