@@ -1080,9 +1080,10 @@ bool CaptureEvent(const SDL_Event& event) {
     }
 }
 
+bool key_bindings_open = false; // the section unfolded (System > Key Bindings opens it so)
+
 void KeyBindingsSection() {
-    static bool open = false;
-    if (!FoldSection("KEY BINDINGS", "Keyboard and mouse", &open)) return;
+    if (!FoldSection("KEY BINDINGS", "Keyboard and mouse", &key_bindings_open)) return;
     const BbBindingsApi* api = bindings_api;
     if (!api) {
         Note("The key bindings load with the game's first pad read; open this again in a moment.", Ink::Faint);
@@ -2250,3 +2251,12 @@ void Render(vk::CommandBuffer cmdbuf, vk::ImageView view, vk::Extent2D extent) {
 }
 
 } // namespace BbOverlay
+
+// System > Key Bindings in the game's own menu (src/pc_menu.c): this menu on its Key Bindings.
+extern "C" void bbgpu_open_key_bindings(void) {
+    std::scoped_lock lock{BbOverlay::imgui_mutex};
+    if (!BbOverlay::initialized) return;
+    BbOverlay::SetOpen(true);
+    BbOverlay::active_tab = 3;
+    BbOverlay::key_bindings_open = true;
+}

@@ -80,6 +80,8 @@ typedef struct {
     void (*reset)(void);
 } BbBindingsApi;
 void bbgpu_set_bindings(const BbBindingsApi *api);
+/* Opens that menu on its Key Bindings (the game's System > Key Bindings). */
+void bbgpu_open_key_bindings(void);
 /* Mouse wheel notches for the pad read, one a call: bit 0 up, bit 1 down (input_bindings.h). */
 uint32_t bbgpu_mouse_wheel_take(void);
 /* The mouse camera: whether the window holds the mouse (relative mode), and the motion since
